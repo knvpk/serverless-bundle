@@ -138,6 +138,7 @@ function babelLoader() {
       // Disable compresisng cache files to speed up caching
       cacheCompression: false,
       plugins: plugins.map(require.resolve),
+      sourceType: "unambiguous",
       presets: [
         [
           require.resolve("@babel/preset-env"),
