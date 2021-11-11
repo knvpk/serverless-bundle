@@ -8,8 +8,9 @@ serverless-bundle is a [Serverless Framework](https://www.serverless.com) plugin
 - Linting Lambda functions using [ESLint](https://eslint.org)
 - Supports transpiling unit tests with [babel-jest](https://github.com/facebook/jest/tree/master/packages/babel-jest)
 - Source map support for proper error messages
+- Support [esbuild](https://esbuild.github.io) and [esbuild-loader](https://github.com/privatenumber/esbuild-loader) for faster builds
 
-And all this works without having to install Webpack, Babel, ESLint, etc. or manage any of their configs. Simply add serverless-bundle to your app and you are done!
+And all this works without having to install Webpack, Babel, ESLint, esbuild, etc. or manage any of their configs. Simply add serverless-bundle to your app and you are done!
 
 ```diff
 -    "eslint"
@@ -22,6 +23,7 @@ And all this works without having to install Webpack, Babel, ESLint, etc. or man
 -    "babel-eslint"
 -    "babel-loader"
 -    "eslint-loader"
+-    "esbuild-loader"
 -    "@babel/runtime"
 -    "@babel/preset-env"
 -    "serverless-webpack"
@@ -37,6 +39,10 @@ And all this works without having to install Webpack, Babel, ESLint, etc. or man
 ```
 
 You can [read more about this over on Serverless Stack](https://serverless-stack.com/chapters/package-lambdas-with-serverless-bundle.html).
+
+---
+
+💥 The `serverless-bundle` team recently launched the [Serverless Stack Framework (SST)](https://github.com/serverless-stack/serverless-stack). SST makes it easy to build serverless apps by letting you [test your Lambda functions live](https://docs.serverless-stack.com/live-lambda-development). It's based on the many of ideas behind `serverless-bundle`.
 
 ---
 
@@ -96,8 +102,10 @@ custom:
   bundle:
     sourcemaps: true                # Enable source maps
     caching: true                   # Enable Webpack caching
+    concurrency: 5                  # Set desired concurrency, defaults to the number of available cores
     stats: false                    # Don't print out any Webpack output
     linting: true                   # Enable linting as a part of the build process
+    esbuild: false                  # Use esbuild-loader instead of babel or ts for faster builds
     disableForkTsChecker: false     # Disable the ForkTsChecker plugin, more below
     tsConfig: "tsconfig.json"       # Path to your 'tsconfig.json', if it's not in the root
     forceInclude:                   # Optional list of NPM packages that need to be included
@@ -108,6 +116,7 @@ custom:
       - isomorphic-webcrypto          # They'll be included in the node_modules/, more below
     forceExclude:                   # Don't include these in the package
       - chrome-aws-lambda             # Because it'll be provided through a Lambda Layer
+    excludeFiles: "**/*.test.ts"    # Exclude files from Webpack that match the glob
     fixPackages:                    # Include fixes for specific packages
       - "formidable@1.x"              # For ex, formidable@1.x doesn't work by default with Webpack
     copyFiles:                      # Copy any additional files to the generated package
@@ -178,6 +187,19 @@ custom:
     }
   }
   ```
+
+- Excluding modules from bundling
+
+  In some cases it might be neccessary to exclude certain modules from bundling with Webpack. This can be achieved by setting the module alias to `false`:
+
+  ``` yml
+  custom:
+    bundle:
+      aliases:
+        - "module-name": false
+  ```
+
+  The `aliases` option is explained in detail in the [Webpack documentation](https://webpack.js.org/configuration/resolve/#resolvealias).
 
 - Usage with WebStorm
 
@@ -416,9 +438,9 @@ custom:
     externals: all
 ```
 
-### Externals vs forceExclude
+### Externals vs forceExclude vs excludeFiles
 
-The two options (`externals` and `forceExclude`) look similar but have some subtle differences. Let's look at them in detail:
+The three options (`externals`, `forceExclude`, and `excludeFiles`) look similar but have some subtle differences. Let's look at them in detail:
 
 - `externals`
 
@@ -427,6 +449,10 @@ The two options (`externals` and `forceExclude`) look similar but have some subt
 - `forceExclude`
 
   These packages are available in the Lambda runtime. Either by default (in the case of `aws-sdk`) or through a Lambda layer that you might be using. So these are not included in the Lambda package. And they are also marked as `externals`. Meaning that packages that are in `forceExclude` are automatically added to the `externals` list as well. By default, `aws-sdk` is listed in the `forceExclude`.
+
+- `excludeFiles`
+
+  These are a glob of files that can be excluded from the function resolution. This happens when you have multiple files that are in the same directory and Serverless Framework tries to use them as a function handler. For example, if you have a `index.js` and a `index.test.js` and your function is pointing to `index`, you'll get a warning saying, `WARNING: More than one matching handlers found for index. Using index.js`. To fix this, use `excludeFiles: **/*.test.js`.
 
 ## Support
 
@@ -460,6 +486,17 @@ To install locally in another project.
 ```bash
 $ npm install /path/to/serverless-bundle
 ```
+
+## Releases
+
+1. Label the PRs with `breaking`, `enhancement`, `bug`, `documentation`, or `internal`
+2. Merge the PRs
+3. Generate changelog `npm run changelog`
+4. Draft a new release with the changelog
+5. Up the version based on the PR labels `npm version <major|minor|patch>`
+6. Push the tag `git push origin <tag_name>`
+7. Publish to npm `npm publish`
+8. Update the tag in release and publish release notes
 
 ## Thanks
 
