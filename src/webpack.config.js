@@ -25,7 +25,8 @@ const tsEslintConfig = require("./ts.eslintrc.json");
 //        use this after importing the config.
 const defaultConfig = importFresh("./config");
 
-const isLocal = slsw.lib.webpack.isLocal;
+// const isLocal = slsw.lib.webpack.isLocal;
+const isLocal = true;
 
 const aliases = config.options.aliases;
 const servicePath = config.servicePath;
